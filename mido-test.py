@@ -2,6 +2,7 @@ import random
 from mido import Message, MidiFile, MidiTrack, bpm2tempo, MetaMessage, bpm2tempo
 from enum import Enum
 import opensimplex
+import math
 
 mid = MidiFile()
 track = MidiTrack()
@@ -98,7 +99,7 @@ def generate_measure(time_sig_numerator, measure_number, mid):
     while beats_left_in_measure > 0:
         curr_note = int((opensimplex.noise2(beats_left_in_measure, measure_number * 100) + 1) / 2 * 60 +  36)
         curr_note_type = get_note_type(types, beats_left_in_measure, mid.length)
-        if beats_left_in_measure == float(time_sig_numerator) or beats_left_in_measure == float(Math.ceil(time_sig_numerator / 2)):
+        if beats_left_in_measure == float(time_sig_numerator) or beats_left_in_measure == float(math.ceil(time_sig_numerator / 2)):
             curr_velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 1000) + 1) / 2 * 10 + 50)
             
         if random.random() - 0.05 * number_of_rests_skipped > 0.75:
