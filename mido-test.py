@@ -1,6 +1,4 @@
-import os
 import random
-from turtle import pen, pos
 from mido import Message, MidiFile, MidiTrack, bpm2tempo, MetaMessage, bpm2tempo
 from enum import Enum
 from numpy import number
@@ -35,8 +33,6 @@ class Scale(Enum):
     PENTATONIC = [36, 38, 41, 43, 45] # Notes of the pentatonic scale on the first octave
     WHOLE_TONE = [36, 38, 40, 42, 44, 46] # ^ but for whole tone scale
     MAJOR = [36, 38, 40, 41, 43, 45, 47]
-
-
 
 def get_note(note_type, ticks_per_beat, time_sig_denominator):
     return int(note_type.value * (time_sig_denominator / 4) * ticks_per_beat)
@@ -151,4 +147,4 @@ def create_midi(bpm, scale, key_signature, time_sig_numerator, time_sig_denomina
     return mid
 
 
-mid = create_midi(120, Scale.WHOLE_TONE, KeySignature.A, 3, 4, 69420)
+create_midi(120, Scale.MAJOR, KeySignature.A, 3, 4, 69420)
