@@ -38,7 +38,7 @@ class Scale(Enum):
 def get_noise(x, y):
     noise = opensimplex.noise2(x, y)
     noise_dx = opensimplex.noise2(x + 0.1, y)
-    return (noise, (noise_dx - noise) / (0.1))
+    return (noise, (noise_dx - noise) / 0.1)
 
 def get_note(note_type, ticks_per_beat, time_sig_denominator):
     return int(note_type.value * (time_sig_denominator / 4) * ticks_per_beat)
@@ -103,7 +103,7 @@ def generate_measure(time_sig_numerator, measure_number):
         noise, noise_dx = get_noise(beats_left_in_measure, measure_number * 100)
 
         curr_note = int((noise + 1) / 2 * 60 + 36)
-        curr_dx = noise_dx / 2 * 60
+        curr_dx = noise_dx
         print(curr_dx)
         curr_note_type = NoteType.QUARTER
         velocity = 0
