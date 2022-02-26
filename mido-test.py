@@ -36,10 +36,13 @@ def get_note_in_scale(curr_note, scale):
 
     return closest_note + 12 * (note_octave - 3)
 
+def get_note_type(time_sig_numerator):
+    
 
-def create_music(time_duration, key_signature, time_sig_denominator, scale, track, mid):
+def create_music(time_duration, key_signature, time_sig_numerator, time_sig_denominator, scale, track, mid):
     while mid.length < time_duration:
         curr_note = int((opensimplex.noise2(mid.length * 4, 1) + 1) / 2 * (96 - 36) +  36)
+        curr_note_type = get_note_type()
         append_to_track(get_note_in_scale(curr_note, scale), 64, 0, NoteType.SIXTEENTH, mid.ticks_per_beat, time_sig_denominator, track)        
 
 def create_midi(bpm, scale, time_sig_numerator, time_sig_denominator):
@@ -49,12 +52,12 @@ def create_midi(bpm, scale, time_sig_numerator, time_sig_denominator):
     track.append(MetaMessage('time_signature', numerator=time_sig_numerator, denominator=time_sig_denominator))
     track.append(MetaMessage('set_tempo', tempo=bpm2tempo(bpm)))
 
-    create_music(20, 0, time_sig_denominator, scale, track, mid)
+    create_music(20, 0, time_sig_numerator, time_sig_denominator, scale, track, mid)
 
 
-    mid.save('./mid-gen/new_song.mid')
+    mid.save('./midi-gen/new_song.mid')
     return mid
 
 
 opensimplex.seed(1233)
-mid = create_midi(240, pentatonic, 4, 4)
+mid = create_midi(240, whole_tone, 4, 4)
