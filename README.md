@@ -1,3 +1,4 @@
 ## TODO
+
 - [ ] Get derivative information about the contour of the music to do dynamics.
-- [ ] Generate bar subdivision for bass
+- [x] Generate bar subdivision for bass
