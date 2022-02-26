@@ -92,4 +92,4 @@ def create_midi(bpm, scale, time_sig_numerator, time_sig_denominator, key_signat
 
 
 opensimplex.seed(62)
-mid = create_midi(120, major, 3, 4, KeySignature.A)
+mid = create_midi(120, pentatonic, 4, 4, KeySignature.FSHARP)
