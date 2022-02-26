@@ -92,16 +92,26 @@ def generate_measure(time_sig_numerator, measure_number, mid):
     measure = []
     types = [NoteType.HALF, NoteType.QUARTER, NoteType.EIGHTH]
 
+    curr_velocity = 0
+    number_of_rests_skipped = 0
+
     while beats_left_in_measure > 0:
         curr_note = int((opensimplex.noise2(beats_left_in_measure, measure_number * 100) + 1) / 2 * 60 +  36)
         curr_note_type = get_note_type(types, beats_left_in_measure, mid.length)
-        velocity = 0
-        if beats_left_in_measure == float(time_sig_numerator):
-            velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 1000) + 1) / 2 * 10 + 50)
+        if beats_left_in_measure == float(time_sig_numerator) or beats_left_in_measure == float(Math.ceil(time_sig_numerator / 2)):
+            curr_velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 1000) + 1) / 2 * 10 + 50)
         else:
-            velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 2000) + 1) / 2 * 30 + 25)
+            curr_velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 2000) + 1) / 2 * 30 + 25)
+
+        if random.random() - 0.05 * number_of_rests_skipped > 0.75:
+            curr_velocity = 0
+            number_of_rests_skipped += 1
+        else:
+            curr_velocity = 80
+            number_of_rests_skipped = 0
+        
         beats_left_in_measure -= curr_note_type.value
-        measure.append((curr_note, velocity, curr_note_type))
+        measure.append((curr_note, curr_velocity, curr_note_type))
     return measure
 
 def create_rhythm(measure_count, time_duration, key_signature, time_sig_numerator, time_sig_denominator, scale, track, mid):
