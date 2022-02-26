@@ -101,13 +101,14 @@ def generate_measure(time_sig_numerator, measure_number, mid):
         curr_note_type = get_note_type(types, beats_left_in_measure, mid.length)
         if beats_left_in_measure == float(time_sig_numerator) or beats_left_in_measure == float(math.ceil(time_sig_numerator / 2)):
             curr_velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 1000) + 1) / 2 * 10 + 50)
-            
-        if random.random() - 0.05 * number_of_rests_skipped > 0.75:
-            curr_velocity = 0
-            number_of_rests_skipped += 1
         else:
-            curr_velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 2000) + 1) / 2 * 30 + 25)
-            number_of_rests_skipped = 0
+            if random.random() - 0.05 * number_of_rests_skipped > 0.75:
+                curr_velocity = 0
+                number_of_rests_skipped += 1
+            else:
+                curr_velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 2000) + 1) / 2 * 30 + 25)
+                number_of_rests_skipped = 0    
+        
         
         beats_left_in_measure -= curr_note_type.value
         measure.append((curr_note, curr_velocity, curr_note_type))
