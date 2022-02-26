@@ -1,3 +1,6 @@
+import os
+import random
+from turtle import pos
 from mido import Message, MidiFile, MidiTrack, bpm2tempo, MetaMessage, bpm2tempo
 from enum import Enum
 import opensimplex
@@ -36,14 +39,26 @@ def get_note_in_scale(curr_note, scale):
 
     return closest_note + 12 * (note_octave - 3)
 
-def get_note_type(time_sig_numerator):
-    
+def get_note_type(beats_left_in_measure, curr_time_in_song):
+    note_types = [e for e in NoteType]
+    possible_note_types = []
+    for i in range(len(note_types)):
+        if note_types[i].value <= beats_left_in_measure:
+            possible_note_types.append(note_types[i])
+    return possible_note_types[int((opensimplex.noise2(curr_time_in_song * 2, 1) + 1) / 2 * (len(possible_note_types)))]
+
 
 def create_music(time_duration, key_signature, time_sig_numerator, time_sig_denominator, scale, track, mid):
+    beats_left_in_measure = float(time_sig_numerator)
+    # Generates a note per iteration
     while mid.length < time_duration:
-        curr_note = int((opensimplex.noise2(mid.length * 4, 1) + 1) / 2 * (96 - 36) +  36)
-        curr_note_type = get_note_type()
-        append_to_track(get_note_in_scale(curr_note, scale), 64, 0, NoteType.SIXTEENTH, mid.ticks_per_beat, time_sig_denominator, track)        
+        curr_note = int((opensimplex.noise2(mid.length * 2, 1) + 1) / 2 * (96 - 36) +  36)
+        curr_note_type = get_note_type(beats_left_in_measure, mid.length)
+        beats_left_in_measure -= curr_note_type.value
+        if beats_left_in_measure <= 0:
+            beats_left_in_measure = float(time_sig_numerator)
+
+        append_to_track(get_note_in_scale(curr_note, scale), 64, 0, curr_note_type, mid.ticks_per_beat, time_sig_denominator, track)        
 
 def create_midi(bpm, scale, time_sig_numerator, time_sig_denominator):
     mid = MidiFile(type=1)
@@ -59,5 +74,5 @@ def create_midi(bpm, scale, time_sig_numerator, time_sig_denominator):
     return mid
 
 
-opensimplex.seed(1233)
-mid = create_midi(240, whole_tone, 4, 4)
+opensimplex.seed(666)
+mid = create_midi(240, pentatonic, 3, 4)
