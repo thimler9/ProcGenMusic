@@ -34,6 +34,12 @@ class Scale(Enum):
     WHOLE_TONE = [36, 38, 40, 42, 44, 46] # ^ but for whole tone scale
     MAJOR = [36, 38, 40, 41, 43, 45, 47]
 
+# Gets noise and its derivative in the x direction
+def get_noise(x, y):
+    noise = opensimplex.noise2(x, y)
+    noise_dx = opensimplex.noise2(x + 0.1, y)
+    return (noise, (noise_dx - noise) / (0.1))
+
 def get_note(note_type, ticks_per_beat, time_sig_denominator):
     return int(note_type.value * (time_sig_denominator / 4) * ticks_per_beat)
 
@@ -94,7 +100,11 @@ def generate_measure(time_sig_numerator, measure_number):
     measure = []
 
     while beats_left_in_measure > 0:
-        curr_note = int((opensimplex.noise2(beats_left_in_measure, measure_number * 100) + 1) / 2 * 60 +  36)
+        noise, noise_dx = get_noise(beats_left_in_measure, measure_number * 100)
+
+        curr_note = int((noise + 1) / 2 * 60 + 36)
+        curr_dx = noise_dx / 2 * 60
+        print(curr_dx)
         curr_note_type = NoteType.QUARTER
         velocity = 0
         if beats_left_in_measure == float(time_sig_numerator):
@@ -122,7 +132,6 @@ def create_midi(bpm, scale, key_signature, time_sig_numerator, time_sig_denomina
     melody = MidiTrack()
     bass = MidiTrack()
 
-    
     melody.append(Message('program_change', program=4, time=0))
     melody.append(MetaMessage('time_signature', numerator=time_sig_numerator, denominator=time_sig_denominator))
     melody.append(MetaMessage('set_tempo', tempo=bpm2tempo(bpm)))
