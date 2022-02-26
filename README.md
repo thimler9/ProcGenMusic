@@ -4,6 +4,7 @@
 - [x] Generate bar subdivision for bass
 
 ## Good Outputs!
+### Listen to their audio in the audio-files folder
 
 Seed | Scale | Key | Time | Bassline Length | BPM
 ------|-------|----|-----|---|-------------------
