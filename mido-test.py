@@ -70,7 +70,7 @@ def create_music(time_duration, key_signature, time_sig_numerator, time_sig_deno
     beats_left_in_measure = float(time_sig_numerator)
     # Generates a note per iteration
     while mid.length < time_duration:
-        curr_note = int((opensimplex.noise2(mid.length * 2, 1) + 1) / 2 * (96 - 36) +  36)
+        curr_note = int((opensimplex.noise2(mid.length * 2, 1) + 1) / 2 * (96 - 36) + 36)
         curr_note_type = get_note_type(beats_left_in_measure, mid.length)
         beats_left_in_measure -= curr_note_type.value
         if beats_left_in_measure <= 0:
