@@ -57,22 +57,44 @@ def create_music(time_duration, key_signature, time_sig_numerator, time_sig_deno
         beats_left_in_measure -= curr_note_type.value
         if beats_left_in_measure <= 0:
             beats_left_in_measure = float(time_sig_numerator)
+        append_to_track(get_note_in_scale(curr_note, scale), 64, 0, curr_note_type, mid.ticks_per_beat, time_sig_denominator, track)
 
-        append_to_track(get_note_in_scale(curr_note, scale), 64, 0, curr_note_type, mid.ticks_per_beat, time_sig_denominator, track)        
+def create_rhythm(time_duration, key_signature, time_sig_numerator, time_sig_denominator, scale, track, mid):
+    beats_left_in_measure = float(time_sig_numerator)
+    velocity = 64
+    # Generates a note per iteration
+    while mid.length < time_duration:
+        curr_note = int((opensimplex.noise2(mid.length * 2, 1) + 1) / 2 * (96 - 36) +  36)
+        curr_note_type = get_note_type(beats_left_in_measure, mid.length)
+        beats_left_in_measure -= curr_note_type.value
+        if beats_left_in_measure <= 0:
+            beats_left_in_measure = float(time_sig_numerator)
+            velocity = int((opensimplex.noise2(mid.length * 2, 10) + 1) / 2 * (104 - 84) +  64)
+        else:
+            velocity = int((opensimplex.noise2(mid.length * 2, 10) + 1) / 2 * (74 - 54) +  64)
+        append_to_track(get_note_in_scale(curr_note, scale), velocity, 0, curr_note_type, mid.ticks_per_beat, time_sig_denominator, track)
 
-def create_midi(bpm, scale, time_sig_numerator, time_sig_denominator):
+def create_midi(bpm, scale, time_sig_numerator, time_sig_denominator, seed):
+    opensimplex.seed(seed)
     mid = MidiFile(type=1)
-    track = MidiTrack()
-    mid.tracks.append(track)
-    track.append(MetaMessage('time_signature', numerator=time_sig_numerator, denominator=time_sig_denominator))
-    track.append(MetaMessage('set_tempo', tempo=bpm2tempo(bpm)))
+    melody = MidiTrack()
+    bass = MidiTrack()
+    mid.tracks.append(melody)
+    mid.tracks.append(bass)
+    
+    melody.append(Message('program_change', program=4, time=0))
+    melody.append(MetaMessage('time_signature', numerator=time_sig_numerator, denominator=time_sig_denominator))
+    melody.append(MetaMessage('set_tempo', tempo=bpm2tempo(bpm)))
 
-    create_music(20, 0, time_sig_numerator, time_sig_denominator, scale, track, mid)
+    bass.append(Message('program_change', program=36, time=0))
+    bass.append(MetaMessage('time_signature', numerator=time_sig_numerator, denominator=time_sig_denominator))
+    bass.append(MetaMessage('set_tempo', tempo=bpm2tempo(bpm)))
 
+    create_music(20, 0, time_sig_numerator, time_sig_denominator, scale, melody, mid)
+    create_rhythm(20, 0, time_sig_numerator, time_sig_denominator, scale, bass, mid)
 
-    mid.save('./midi-gen/new_song.mid')
+    mid.save('./midi-gen/' + str(seed) + '.mid')
     return mid
 
 
-opensimplex.seed(666)
-mid = create_midi(240, pentatonic, 3, 4)
+mid = create_midi(240, pentatonic, 3, 4, 666)
