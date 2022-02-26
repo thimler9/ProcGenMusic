@@ -1,8 +1,8 @@
 import random
 from mido import Message, MidiFile, MidiTrack, bpm2tempo, MetaMessage, bpm2tempo
 from enum import Enum
-from numpy import number
 import opensimplex
+import math
 
 mid = MidiFile()
 track = MidiTrack()
@@ -63,8 +63,7 @@ def get_note_in_scale(curr_note, scale, key_signature):
 
     return closest_note + 12 * (note_octave - 3) + key_signature.value
 
-def get_note_type(beats_left_in_measure, curr_time_in_song):
-    note_types = [e for e in NoteType]
+def get_note_type(note_types, beats_left_in_measure, curr_time_in_song):
     possible_note_types = []
     for i in range(len(note_types)):
         if note_types[i].value <= beats_left_in_measure:
@@ -81,7 +80,7 @@ def create_music(time_duration, key_signature, time_sig_numerator, time_sig_deno
     # Generates a note per iteration
     while mid.length < time_duration:
         curr_note = int((opensimplex.noise2(mid.length * 2, 1) + 1) / 2 * 60 +  36)
-        curr_note_type = get_note_type(beats_left_in_measure, mid.length)
+        curr_note_type = get_note_type([e for e in NoteType], beats_left_in_measure, mid.length)
         beats_left_in_measure -= curr_note_type.value
         if beats_left_in_measure <= 0:
             beats_left_in_measure = float(time_sig_numerator)
@@ -95,30 +94,36 @@ def create_music(time_duration, key_signature, time_sig_numerator, time_sig_deno
         
         append_to_track(get_note_in_scale(curr_note, scale, key_signature), curr_velocity, curr_note_type, mid.ticks_per_beat, time_sig_denominator, track)
 
-def generate_measure(time_sig_numerator, measure_number):
+def generate_measure(time_sig_numerator, measure_number, mid):
     beats_left_in_measure = float(time_sig_numerator)
     measure = []
+    types = [NoteType.HALF, NoteType.QUARTER, NoteType.EIGHTH]
+
+    curr_velocity = 0
+    number_of_rests_skipped = 0
 
     while beats_left_in_measure > 0:
-        noise, noise_dx = get_noise(beats_left_in_measure, measure_number * 100)
-
-        curr_note = int((noise + 1) / 2 * 60 + 36)
-        curr_dx = noise_dx
-        print(curr_dx)
-        curr_note_type = NoteType.QUARTER
-        velocity = 0
-        if beats_left_in_measure == float(time_sig_numerator):
-            velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 1000) + 1) / 2 * 10 + 50)
+        curr_note = int((opensimplex.noise2(beats_left_in_measure, measure_number * 100) + 1) / 2 * 60 +  36)
+        curr_note_type = get_note_type(types, beats_left_in_measure, mid.length)
+        if beats_left_in_measure == float(time_sig_numerator) or beats_left_in_measure == float(math.ceil(time_sig_numerator / 2)):
+            curr_velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 1000) + 1) / 2 * 10 + 50)
         else:
-            velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 2000) + 1) / 2 * 30 + 25)
+            if random.random() - 0.05 * number_of_rests_skipped > 0.75:
+                curr_velocity = 0
+                number_of_rests_skipped += 1
+            else:
+                curr_velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 2000) + 1) / 2 * 30 + 25)
+                number_of_rests_skipped = 0    
+        
+        
         beats_left_in_measure -= curr_note_type.value
-        measure.append((curr_note, velocity, curr_note_type))
+        measure.append((curr_note, curr_velocity, curr_note_type))
     return measure
 
 def create_rhythm(measure_count, time_duration, key_signature, time_sig_numerator, time_sig_denominator, scale, track, mid):
     measures = []
     for i in range(measure_count):
-        measures.append(generate_measure(time_sig_numerator, i))
+        measures.append(generate_measure(time_sig_numerator, i, mid))
     
     while mid.length < time_duration:
         for measure in measures:
