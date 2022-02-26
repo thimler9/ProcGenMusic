@@ -1,4 +1,3 @@
-import os
 import random
 from mido import Message, MidiFile, MidiTrack, bpm2tempo, MetaMessage, bpm2tempo
 from enum import Enum
@@ -13,10 +12,26 @@ class NoteType(Enum):
     EIGHTH = 0.5
     QUARTER = 1
     HALF = 2
-    WHOLE = 4  
+    WHOLE = 4
 
-pentatonic = [36, 38, 41, 43, 45] # Notes of the pentatonic scale on the first octave
-whole_tone = [36, 38, 40, 42, 44, 46] # ^ but for whole tone scale
+class KeySignature(Enum):
+    C = 0
+    CSHARP = 1
+    D = 2
+    DSHARP = 3
+    E = 4
+    F = 5
+    FSHARP = 6
+    G = 7
+    GSHARP = 8
+    A = 9
+    ASHARP = 10
+    B = 11
+
+class Scale(Enum):
+    PENTATONIC = [36, 38, 41, 43, 45] # Notes of the pentatonic scale on the first octave
+    WHOLE_TONE = [36, 38, 40, 42, 44, 46] # ^ but for whole tone scale
+    MAJOR = [36, 38, 40, 41, 43, 45, 47]
 
 def get_note(note_type, ticks_per_beat, time_sig_denominator):
     return int(note_type.value * (time_sig_denominator / 4) * ticks_per_beat)
@@ -27,7 +42,7 @@ def append_to_track(note_pitch, velocity, note_type, ticks_per_beat, time_sig_de
     track.append(Message('note_off', note=note_pitch, velocity=velocity, time=end_time))
     return end_time
 
-def get_note_in_scale(curr_note, scale):
+def get_note_in_scale(curr_note, scale, key_signature):
     note_octave = curr_note // 12
     first_octave_note = (curr_note % 12) + 36
     
@@ -35,8 +50,11 @@ def get_note_in_scale(curr_note, scale):
     for note in scale:
         if abs(first_octave_note - note) < abs(first_octave_note - closest_note):
             closest_note = note
+        if abs(first_octave_note - note) == abs(first_octave_note - closest_note):
+            if random.randint(0, 1) == 0:
+                closest_note = note
 
-    return closest_note + 12 * (note_octave - 3)
+    return closest_note + 12 * (note_octave - 3) + key_signature.value
 
 def get_note_type(note_types, beats_left_in_measure, curr_time_in_song):
     possible_note_types = []
@@ -67,7 +85,7 @@ def create_music(time_duration, key_signature, time_sig_numerator, time_sig_deno
             curr_velocity = 80
             number_of_rests_skipped = 0
         
-        append_to_track(get_note_in_scale(curr_note, scale), curr_velocity, curr_note_type, mid.ticks_per_beat, time_sig_denominator, track)
+        append_to_track(get_note_in_scale(curr_note, scale, key_signature), curr_velocity, curr_note_type, mid.ticks_per_beat, time_sig_denominator, track)
 
 def generate_measure(time_sig_numerator, measure_number, mid):
     beats_left_in_measure = float(time_sig_numerator)
@@ -95,9 +113,9 @@ def create_rhythm(measure_count, time_duration, key_signature, time_sig_numerato
         for measure in measures:
             for note in measure:
                 (note_pitch, velocity, note_type) = note
-                append_to_track(note_pitch, velocity, note_type, mid.ticks_per_beat, time_sig_denominator, track)
+                append_to_track(get_note_in_scale(note_pitch, scale, key_signature), velocity, note_type, mid.ticks_per_beat, time_sig_denominator, track)
 
-def create_midi(bpm, scale, time_sig_numerator, time_sig_denominator, seed):
+def create_midi(bpm, scale, key_signature, time_sig_numerator, time_sig_denominator, seed):
     opensimplex.seed(seed)
     mid = MidiFile(type=1)
     melody = MidiTrack()
@@ -115,17 +133,17 @@ def create_midi(bpm, scale, time_sig_numerator, time_sig_denominator, seed):
     time_duration = 20
 
     mid.tracks.append(melody)
-    create_music(time_duration, 0, time_sig_numerator, time_sig_denominator, scale, melody, mid)
+    create_music(time_duration, key_signature, time_sig_numerator, time_sig_denominator, scale.value, melody, mid)
     mid.tracks.pop()
     mid.tracks.append(bass)
-    create_rhythm(2, time_duration, 0, time_sig_numerator, time_sig_denominator, scale, bass, mid)
+    create_rhythm(2, time_duration, key_signature, time_sig_numerator, time_sig_denominator, scale.value, bass, mid)
     mid.tracks.pop()
 
     mid.tracks.append(melody)
     mid.tracks.append(bass)
-    mid.save('./midi-gen/' + str(seed) + '.mid')
+    mid.save('./midi-gen/' + scale.name + str(seed) + key_signature.name + '.mid')
 
     return mid
 
 
-mid = create_midi(120, pentatonic, 3, 4, 42069)
+create_midi(120, Scale.MAJOR, KeySignature.A, 3, 4, 69420)
