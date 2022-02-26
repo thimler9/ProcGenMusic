@@ -4,10 +4,6 @@ from enum import Enum
 import opensimplex
 import math
 
-mid = MidiFile()
-track = MidiTrack()
-mid.tracks.append(track)
-
 class NoteType(Enum):
     SIXTEENTH = 0.25
     EIGHTH = 0.5
@@ -79,8 +75,18 @@ def create_music(time_duration, key_signature, time_sig_numerator, time_sig_deno
 
     # Generates a note per iteration
     while mid.length < time_duration:
-        curr_note = int((opensimplex.noise2(mid.length * 2, 1) + 1) / 2 * 60 +  36)
+        noise, noise_dx = get_noise(mid.length * 2, 1)
+
+        curr_note = int((noise + 1) / 2 * 60 +  36)
         curr_note_type = get_note_type([e for e in NoteType], beats_left_in_measure, mid.length)
+
+        # This variable indicates the necesssary derivative magnitude we need if we
+        # want to change the velocity
+        velocity_threshold = 0.5
+        veloctiy_multiplier = 1
+        if abs(noise_dx) > velocity_threshold:
+            veloctiy_multiplier *= abs(noise_dx) * 1.25
+
         beats_left_in_measure -= curr_note_type.value
         if beats_left_in_measure <= 0:
             beats_left_in_measure = float(time_sig_numerator)
@@ -89,7 +95,7 @@ def create_music(time_duration, key_signature, time_sig_numerator, time_sig_deno
             curr_velocity = 0
             number_of_rests_skipped += 1
         else:
-            curr_velocity = 80
+            curr_velocity = min(110, int(64 * veloctiy_multiplier))
             number_of_rests_skipped = 0
         
         append_to_track(get_note_in_scale(curr_note, scale, key_signature), curr_velocity, curr_note_type, mid.ticks_per_beat, time_sig_denominator, track)
@@ -161,4 +167,4 @@ def create_midi(bpm, scale, key_signature, time_sig_numerator, time_sig_denomina
     return mid
 
 
-create_midi(120, Scale.MAJOR, KeySignature.A, 3, 4, 69420)
+create_midi(120, Scale.PENTATONIC, KeySignature.A, 3, 4, 69420)
