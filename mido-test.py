@@ -29,6 +29,8 @@ class Scale(Enum):
     PENTATONIC = [36, 38, 41, 43, 45] # Notes of the pentatonic scale on the first octave
     WHOLE_TONE = [36, 38, 40, 42, 44, 46] # ^ but for whole tone scale
     MAJOR = [36, 38, 40, 41, 43, 45, 47]
+    NATURAL_MINOR = [36, 38, 39, 41, 43, 44, 46]
+    HARMONIC_MINOR = [36, 38, 39, 41, 43, 44, 47]
 
 # Gets noise and its derivative in the x direction
 def get_noise(x, y):
@@ -137,8 +139,9 @@ def create_rhythm(measure_count, time_duration, key_signature, time_sig_numerato
                 (note_pitch, velocity, note_type) = note
                 append_to_track(get_note_in_scale(note_pitch, scale, key_signature), velocity, note_type, mid.ticks_per_beat, time_sig_denominator, track)
 
-def create_midi(bpm, scale, key_signature, time_sig_numerator, time_sig_denominator, seed):
+def create_midi(song_length, bpm, scale, key_signature, time_sig_numerator, time_sig_denominator, length_of_bassline, seed):
     opensimplex.seed(seed)
+    random.seed(seed)
     mid = MidiFile(type=1)
     melody = MidiTrack()
     bass = MidiTrack()
@@ -151,13 +154,11 @@ def create_midi(bpm, scale, key_signature, time_sig_numerator, time_sig_denomina
     bass.append(MetaMessage('time_signature', numerator=time_sig_numerator, denominator=time_sig_denominator))
     bass.append(MetaMessage('set_tempo', tempo=bpm2tempo(bpm)))
 
-    time_duration = 20
-
     mid.tracks.append(melody)
-    create_music(time_duration, key_signature, time_sig_numerator, time_sig_denominator, scale.value, melody, mid)
+    create_music(song_length, key_signature, time_sig_numerator, time_sig_denominator, scale.value, melody, mid)
     mid.tracks.pop()
     mid.tracks.append(bass)
-    create_rhythm(2, time_duration, key_signature, time_sig_numerator, time_sig_denominator, scale.value, bass, mid)
+    create_rhythm(length_of_bassline, song_length, key_signature, time_sig_numerator, time_sig_denominator, scale.value, bass, mid)
     mid.tracks.pop()
 
     mid.tracks.append(melody)
@@ -167,4 +168,4 @@ def create_midi(bpm, scale, key_signature, time_sig_numerator, time_sig_denomina
     return mid
 
 
-create_midi(120, Scale.PENTATONIC, KeySignature.A, 3, 4, 69420)
+create_midi(30, 120, Scale.PENTATONIC, KeySignature.C, 4, 4, 3, 1293)
