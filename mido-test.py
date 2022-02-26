@@ -3,6 +3,7 @@ import random
 from turtle import pos
 from mido import Message, MidiFile, MidiTrack, bpm2tempo, MetaMessage, bpm2tempo
 from enum import Enum
+from numpy import number
 import opensimplex
 
 mid = MidiFile()
@@ -50,6 +51,10 @@ def get_note_type(beats_left_in_measure, curr_time_in_song):
 
 def create_music(time_duration, key_signature, time_sig_numerator, time_sig_denominator, scale, track, mid):
     beats_left_in_measure = float(time_sig_numerator)
+
+    curr_velocity = 0
+    number_of_rests_skipped = 0
+
     # Generates a note per iteration
     while mid.length < time_duration:
         curr_note = int((opensimplex.noise2(mid.length * 2, 1) + 1) / 2 * 60 +  36)
@@ -57,7 +62,15 @@ def create_music(time_duration, key_signature, time_sig_numerator, time_sig_deno
         beats_left_in_measure -= curr_note_type.value
         if beats_left_in_measure <= 0:
             beats_left_in_measure = float(time_sig_numerator)
-        append_to_track(get_note_in_scale(curr_note, scale), 64, curr_note_type, mid.ticks_per_beat, time_sig_denominator, track)
+
+        if random.random() - 0.05 * number_of_rests_skipped > 0.75:
+            curr_velocity = 0
+            number_of_rests_skipped += 1
+        else:
+            curr_velocity = 80
+            number_of_rests_skipped = 0
+        
+        append_to_track(get_note_in_scale(curr_note, scale), curr_velocity, curr_note_type, mid.ticks_per_beat, time_sig_denominator, track)
 
 def generate_measure(time_sig_numerator, measure_number):
     beats_left_in_measure = float(time_sig_numerator)
@@ -65,12 +78,12 @@ def generate_measure(time_sig_numerator, measure_number):
 
     while beats_left_in_measure > 0:
         curr_note = int((opensimplex.noise2(beats_left_in_measure, measure_number * 100) + 1) / 2 * 60 +  36)
-        curr_note_type = get_note_type(beats_left_in_measure, mid.length)
+        curr_note_type = NoteType.QUARTER
         velocity = 0
         if beats_left_in_measure == float(time_sig_numerator):
-            velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 1000) + 1) / 2 * 10 + 75)
+            velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 1000) + 1) / 2 * 10 + 50)
         else:
-            velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 2000) + 1) / 2 * 30 + 40)
+            velocity = int((opensimplex.noise2(beats_left_in_measure, measure_number * 2000) + 1) / 2 * 30 + 25)
         beats_left_in_measure -= curr_note_type.value
         measure.append((curr_note, velocity, curr_note_type))
     return measure
@@ -91,8 +104,7 @@ def create_midi(bpm, scale, time_sig_numerator, time_sig_denominator, seed):
     mid = MidiFile(type=1)
     melody = MidiTrack()
     bass = MidiTrack()
-    mid.tracks.append(melody)
-    mid.tracks.append(bass)
+
     
     melody.append(Message('program_change', program=4, time=0))
     melody.append(MetaMessage('time_signature', numerator=time_sig_numerator, denominator=time_sig_denominator))
@@ -104,13 +116,18 @@ def create_midi(bpm, scale, time_sig_numerator, time_sig_denominator, seed):
 
     time_duration = 20
 
+    mid.tracks.append(melody)
     create_music(time_duration, 0, time_sig_numerator, time_sig_denominator, scale, melody, mid)
+    mid.tracks.pop()
+    mid.tracks.append(bass)
     create_rhythm(2, time_duration, 0, time_sig_numerator, time_sig_denominator, scale, bass, mid)
+    mid.tracks.pop()
 
+    mid.tracks.append(melody)
+    mid.tracks.append(bass)
     mid.save('./midi-gen/' + str(seed) + '.mid')
 
-    print(len(mid.tracks))
     return mid
 
 
-mid = create_midi(240, pentatonic, 3, 4, 666)
+mid = create_midi(120, pentatonic, 3, 4, 42069)
