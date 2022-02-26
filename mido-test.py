@@ -59,11 +59,14 @@ def create_music(time_duration, key_signature, time_sig_numerator, time_sig_deno
             beats_left_in_measure = float(time_sig_numerator)
         append_to_track(get_note_in_scale(curr_note, scale), 64, 0, curr_note_type, mid.ticks_per_beat, time_sig_denominator, track)
 
-def create_rhythm(time_duration, key_signature, time_sig_numerator, time_sig_denominator, scale, track, mid):
+def create_rhythm(bar_duration, key_signature, time_sig_numerator, time_sig_denominator, scale, track, mid):
     beats_left_in_measure = float(time_sig_numerator)
     velocity = 64
+    notes = []
+    i = 0;
+
     # Generates a note per iteration
-    while mid.length < time_duration:
+    while i < bar_duration:
         curr_note = int((opensimplex.noise2(mid.length * 2, 1) + 1) / 2 * (96 - 36) +  36)
         curr_note_type = get_note_type(beats_left_in_measure, mid.length)
         beats_left_in_measure -= curr_note_type.value
@@ -72,7 +75,10 @@ def create_rhythm(time_duration, key_signature, time_sig_numerator, time_sig_den
             velocity = int((opensimplex.noise2(mid.length * 2, 10) + 1) / 2 * (104 - 84) +  64)
         else:
             velocity = int((opensimplex.noise2(mid.length * 2, 10) + 1) / 2 * (74 - 54) +  64)
-        append_to_track(get_note_in_scale(curr_note, scale), velocity, 0, curr_note_type, mid.ticks_per_beat, time_sig_denominator, track)
+        i += 1
+        notes[i] = (get_note_in_scale(curr_note, scale), velocity, curr_note_type)
+    
+    return notes
 
 def create_midi(bpm, scale, time_sig_numerator, time_sig_denominator, seed):
     opensimplex.seed(seed)
@@ -90,8 +96,13 @@ def create_midi(bpm, scale, time_sig_numerator, time_sig_denominator, seed):
     bass.append(MetaMessage('time_signature', numerator=time_sig_numerator, denominator=time_sig_denominator))
     bass.append(MetaMessage('set_tempo', tempo=bpm2tempo(bpm)))
 
-    create_music(20, 0, time_sig_numerator, time_sig_denominator, scale, melody, mid)
-    create_rhythm(20, 0, time_sig_numerator, time_sig_denominator, scale, bass, mid)
+    time_duration = 20
+
+    create_music(time_duration, 0, time_sig_numerator, time_sig_denominator, scale, melody, mid)
+    create_rhythm(8, 0, time_sig_numerator, time_sig_denominator, scale, bass, mid)
+
+    while mid.length < time_duration:
+        append_to_track(get_note_in_scale(curr_note, scale), velocity, 0, curr_note_type, mid.ticks_per_beat, time_sig_denominator, track)
 
     mid.save('./midi-gen/' + str(seed) + '.mid')
     return mid
